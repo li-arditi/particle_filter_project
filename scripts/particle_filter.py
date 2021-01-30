@@ -17,7 +17,7 @@ from numpy.random import random_sample
 import math
 from copy import deepcopy
 
-from random import randint, random
+from random import randint, random, choice, uniform
 
 
 
@@ -130,14 +130,58 @@ class ParticleFilter:
     def get_map(self, data):
 
         self.map = data
+        
 
-        self.occupancy_field = OccupancyField(data)
+        # self.occupancy_field = OccupancyField(data)
+
+        # rosmsg echo OccupancyGrid gices:
+        # width = 384, height = 384
+        # origin position x,y,z = -10.0, -10.0, 0.0; orientation x,y,z,w = 0, 0, 0, 1
+        # resolution = 0.05 in m/cell
 
     
 
     def initialize_particle_cloud(self):
-        
+        # resolution = 0.05 # m/cell 
+        # rospy.loginfo(self.map)
+        # possible_xs = []
+        # possible_ys = []
+        # for i in range(0, len(self.map.data)):
+        #     if self.map.data[i] == 0:
+        #         x = i % 384
+        #         y = math.floor(i/384)
+        #         if x not in possible_xs:
+        #             possible_xs.append(x)
+        #         if y not in possible_ys:
+        #             possible_ys.append(y)
+        # rospy.loginfo(possible_ys)
+        # rospy.loginfo(possible_xs)
+
         # TODO
+        # self.particle_cloud
+        # for p in range(0, self.num_particles):
+        for p in range(0, 100):
+            particle = Particle(Pose(), 0.05)
+            x = uniform(-7.5,7.5)
+            particle.pose.position.x = x
+            if x <= -5.0:
+                y = uniform(-4,5.3)
+            elif x <= 0:
+                y = uniform(-0.1, 5.3)
+            elif x <= 4.8:
+                y = uniform(-0.1, 5)
+            else:
+                y = uniform(-5.5, 5)
+
+            particle.pose.position.y = y
+
+            theta = math.radians(random() * 360)
+            particle.pose.orientation.z = math.sin(theta/2)
+            particle.pose.orientation.w = math.cos(theta/2)
+            self.particle_cloud.append(particle)
+            # rospy.loginfo(self.particle_cloud[p].pose)
+            
+
 
 
         self.normalize_particles()
@@ -160,6 +204,7 @@ class ParticleFilter:
         particle_cloud_pose_array.poses
 
         for part in self.particle_cloud:
+            # rospy.loginfo(part.pose)
             particle_cloud_pose_array.poses.append(part.pose)
 
         self.particles_pub.publish(particle_cloud_pose_array)
