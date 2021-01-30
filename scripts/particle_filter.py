@@ -159,9 +159,10 @@ class ParticleFilter:
 
         # TODO
         # self.particle_cloud
+        test_num = 100
         # for p in range(0, self.num_particles):
-        for p in range(0, 100):
-            particle = Particle(Pose(), 0.05)
+        for p in range(0, test_num):
+            particle = Particle(Pose(), 1/test_num)
             x = uniform(-7.5,7.5)
             particle.pose.position.x = x
             if x <= -5.0:
@@ -193,8 +194,23 @@ class ParticleFilter:
         # make all the particle weights sum to 1.0
         
         # TODO
-        pass
-
+        # rospy.loginfo(sum(p.w for p in self.particle_cloud))
+        total_w = sum(p.w for p in self.particle_cloud)
+        if round(total_w, 2) != 1:
+            for particle in self.particle_cloud:
+                particle.w = particle.w / total_w
+        
+        rospy.loginfo(sum(p.w for p in self.particle_cloud))
+        
+        # if round(sum(p.w for p in self.particle_cloud), 2) != 1:
+        #     weights = []
+        #     for particle in self.particle_cloud:
+        #         weights.append(particle.w)
+        #     normalize = max(weights) - min(weights)
+        #     for particle in self.particle_cloud:
+        #         particle.w = (particle.w - min(weights)) / normalize
+        # ^^^^ this has issues with divide by zero
+        
 
 
     def publish_particle_cloud(self):
