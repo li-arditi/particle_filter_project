@@ -159,10 +159,10 @@ class ParticleFilter:
 
         # TODO
         # self.particle_cloud
-        test_num = 100
+        #test_num = 100
         # for p in range(0, self.num_particles):
-        for p in range(0, test_num):
-            particle = Particle(Pose(), 1/test_num)
+        for p in range(0, self.num_particles):
+            particle = Particle(Pose(), 1/self.num_particles)
             x = uniform(-7.5,7.5)
             particle.pose.position.x = x
             if x <= -5.0:
