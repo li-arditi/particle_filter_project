@@ -43,3 +43,19 @@ __Team Members: Li Arditi and Victoria Villalba__
 * Mon. Feb 8: have code finished; give time to clean-up code/comments and finalize write-up
 
 * work on write-up throughout/once a function is complete
+
+### Writeup
+
+The objective of this project is to implement the particle filter algorithm in order to localize the robot on a map. We create a large number of particles and compare the relative surroundings of the particles to the robot sensor data and then weight the particles to get a higher amount of more accurate particles when resampling. Repeating this process will gather all the particles at or near the
+ robot and help us determine the location.
+
+description:
+
+location/description of 3 main steps:
+
+challenges:
+
+future work:
+
+takeaways:
+
