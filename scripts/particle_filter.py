@@ -13,7 +13,7 @@ from tf import TransformBroadcaster
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
 
 import numpy as np
-from numpy.random import random_sample
+from numpy.random import random_sample, normal
 import math
 from copy import deepcopy
 
@@ -94,6 +94,7 @@ class ParticleFilter:
         # inialize our map and occupancy field
         self.map = OccupancyGrid()
         self.occupancy_field = None
+        # self.unocc = []
 
         self.likelihood_field = LikelihoodField()
 
@@ -234,16 +235,13 @@ class ParticleFilter:
         # TODO
         
 
-        
-
         probabilities = []
         for particle in self.particle_cloud:
             probabilities.append(particle.w)
-        rospy.loginfo(max(probabilities))
+        # rospy.loginfo(max(probabilities))
         # # rospy.loginfo(len(self.particle_cloud))
         # # rospy.loginfo(probabilities)
 
-        
         new_sample = draw_random_sample(self.particle_cloud, probabilities, self.num_particles)
         self.particle_cloud = new_sample
 
@@ -332,9 +330,9 @@ class ParticleFilter:
         orientY = 0
         orientZ = 0
         orientW = 0
-        for p in self.num_particles:
-            xAvg += p.pose.postion.x
-            yAvg += p.pose.postion.y
+        for p in self.particle_cloud:
+            xAvg += p.pose.position.x
+            yAvg += p.pose.position.y
             orientX += p.pose.orientation.x
             orientY += p.pose.orientation.y
             orientZ += p.pose.orientation.z
@@ -346,17 +344,27 @@ class ParticleFilter:
         self.robot_estimate.orientation.z = orientZ/self.num_particles
         self.robot_estimate.orientation.w = orientW/self.num_particles
 
-        pass
+        
 
 
     
     def update_particle_weights_with_measurement_model(self, data):
 
         # TODO
-        
+        # ((x_lower, x_upper), (y_lower, y_upper)) = self.likelihood_field.get_obstacle_bounding_box()
+        # rospy.loginfo(((x_lower, x_upper), (y_lower, y_upper)))
         for particle in self.particle_cloud:
-            # # rospy.loginfo(particle.pose)
-            
+        #     # # rospy.loginfo(particle.pose)
+            # x = particle.pose.position.x
+            # y = particle.pose.position.y
+        #     noise = normal(0.0, 0.1)
+        #     # rospy.loginfo((x,y))
+        #     if (x < x_lower) | (x > x_upper) | (y < y_lower) | (y > y_upper):
+        #         particle.w = 10**(-100)
+        #         # rospy.loginfo("does this happen")
+        #         continue
+
+            # rospy.loginfo("how about this")
             q = 1
             for a in range(0,360, 10):
                 z_kt = data.ranges[a]
@@ -379,8 +387,10 @@ class ParticleFilter:
                 # # rospy.loginfo(closest_obstacle_dist)
                 if math.isnan(closest_obstacle_dist):
                     # # rospy.loginfo("it's nan")   
+                    # prob = 10**(-100)
                     continue
                         
+                # else:
                 prob = compute_prob_zero_centered_gaussian(closest_obstacle_dist, 0.1)
                 # # rospy.loginfo(prob)
 
@@ -412,8 +422,8 @@ class ParticleFilter:
             # # rospy.loginfo(particle.pose)
             # # rospy.loginfo(part_theta)
             # # rospy.loginfo(dyaw)
-            particle.pose.position.x  += dx #noise np.random.normal() * noise
-            particle.pose.position.y  += dy #noise
+            particle.pose.position.x  += dx + normal(0.0, 0.1)#noise np.random.normal() * noise
+            particle.pose.position.y  += dy + normal(0.0, 0.1)#noise
             new_quat = quaternion_from_euler(0.0, 0.0, part_theta + dyaw)
             particle.pose.orientation.x = new_quat[0]
             particle.pose.orientation.y = new_quat[1]
