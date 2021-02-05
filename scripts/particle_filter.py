@@ -326,6 +326,26 @@ class ParticleFilter:
         # based on the particles within the particle cloud, update the robot pose estimate
         
         # TODO
+        xAvg = 0
+        yAvg = 0
+        orientX = 0
+        orientY = 0
+        orientZ = 0
+        orientW = 0
+        for p in range(0,self.num_particles):
+            xAvg += particle_cloud[p].pose.postion.x
+            yAvg += particle_cloud[p].pose.postion.y
+            orientX += particle_cloud[p].pose.orientation.x
+            orientY += particle_cloud[p].pose.orientation.y
+            orientZ += particle_cloud[p].pose.orientation.z
+            orientW += particle_cloud[p].pose.orientation.w
+        self.robot_estimate.pose.position.x = xAvg/self.num_particles
+        self.robot_estimate.pose.position.y = yAvg/self.num_particles
+        self.robot_estimate.pose.orientation.x = orientX/self.num_particles
+        self.robot_estimate.pose.orientation.y = orientY/self.num_particles
+        self.robot_estimate.pose.orientation.z = orientZ/self.num_particles
+        self.robot_estimate.pose.orientation.w = orientW/self.num_particles
+
         pass
 
 
