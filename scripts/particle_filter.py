@@ -99,7 +99,7 @@ class ParticleFilter:
 
 
         # the number of particles used in the particle filter
-        self.num_particles = 10
+        self.num_particles = 2000
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -198,23 +198,11 @@ class ParticleFilter:
         # make all the particle weights sum to 1.0
         
         # TODO
-        # rospy.loginfo(sum(p.w for p in self.particle_cloud))
+        # # rospy.loginfo(sum(p.w for p in self.particle_cloud))
         total_w = sum(p.w for p in self.particle_cloud)
-        if round(total_w, 2) != 1:
+        if total_w != 1:
             for particle in self.particle_cloud:
                 particle.w = particle.w / total_w
-        
-        # rospy.loginfo(sum(p.w for p in self.particle_cloud))
-        
-        # if round(sum(p.w for p in self.particle_cloud), 2) != 1:
-        #     weights = []
-        #     for particle in self.particle_cloud:
-        #         weights.append(particle.w)
-        #     normalize = max(weights) - min(weights)
-        #     for particle in self.particle_cloud:
-        #         particle.w = (particle.w - min(weights)) / normalize
-        # ^^^^ this has issues with divide by zero
-        
 
 
     def publish_particle_cloud(self):
@@ -224,7 +212,7 @@ class ParticleFilter:
         particle_cloud_pose_array.poses
 
         for part in self.particle_cloud:
-            # rospy.loginfo(part.pose)
+            # # rospy.loginfo(part.pose)
             particle_cloud_pose_array.poses.append(part.pose)
 
         self.particles_pub.publish(particle_cloud_pose_array)
@@ -244,19 +232,20 @@ class ParticleFilter:
     def resample_particles(self):
 
         # TODO
-        pass
-
-        # self.normalize_particles()
-        # probabilities = []
-        # for particle in self.particle_cloud:
-        #     probabilities.append(particle.w)
-        # rospy.loginfo(len(probabilities))
-        # rospy.loginfo(len(self.particle_cloud))
         
-        # new_sample = draw_random_sample(self.particle_cloud, probabilities, self.num_particles)
-        # self.particle_cloud = new_sample
 
-        # self.publish_particle_cloud()
+        
+
+        probabilities = []
+        for particle in self.particle_cloud:
+            probabilities.append(particle.w)
+        rospy.loginfo(max(probabilities))
+        # # rospy.loginfo(len(self.particle_cloud))
+        # # rospy.loginfo(probabilities)
+
+        
+        new_sample = draw_random_sample(self.particle_cloud, probabilities, self.num_particles)
+        self.particle_cloud = new_sample
 
 
 
@@ -344,33 +333,44 @@ class ParticleFilter:
     def update_particle_weights_with_measurement_model(self, data):
 
         # TODO
+        
         for particle in self.particle_cloud:
-            rospy.loginfo(particle.pose)
+            # # rospy.loginfo(particle.pose)
+            
             q = 1
-            for a in range(0,360):
+            for a in range(0,360, 10):
                 z_kt = data.ranges[a]
                 if z_kt > 3.5:
                     z_kt = 3.5
+                    # # rospy.loginfo((a, z_kt))
 
-                # rospy.loginfo(z_kt)
+                # # rospy.loginfo(z_kt)
                 theta = get_yaw_from_pose(particle.pose)    # orientation of robot in rad
-                # rospy.loginfo(theta)
+                # # rospy.loginfo(theta)
+                
+                # # rospy.loginfo(theta)
 
                 x_z_kt = particle.pose.position.x + z_kt * math.cos(theta + math.radians(a))
-                y_z_kt = particle.pose.position.y + z_kt * math.sin(theta + math.radians(a))
-                # rospy.loginfo(x_z_kt)
-                # rospy.loginfo(y_z_kt)
+                y_z_kt = particle.pose.position.y + z_kt * math.sin(theta + math.radians(a)) 
+                # # rospy.loginfo(x_z_kt)
+                # # rospy.loginfo(y_z_kt)
 
                 closest_obstacle_dist = self.likelihood_field.get_closest_obstacle_distance(x_z_kt, y_z_kt)
-
+                # # rospy.loginfo(closest_obstacle_dist)
+                if math.isnan(closest_obstacle_dist):
+                    # # rospy.loginfo("it's nan")   
+                    continue
+                        
                 prob = compute_prob_zero_centered_gaussian(closest_obstacle_dist, 0.1)
-                # rospy.loginfo(prob)
+                # # rospy.loginfo(prob)
 
                 q = q * prob
-                rospy.loginfo(q)
+                # # rospy.loginfo(q)
+            # # rospy.loginfo(q)
+            
+            particle.w = q + 10**(-50)
+            # # rospy.loginfo(particle.w)
 
-            particle.w = q
-            # rospy.loginfo(particle.w)
 
 
         
@@ -385,17 +385,22 @@ class ParticleFilter:
         dy = self.odom_pose.pose.position.y - self.odom_pose_last_motion_update.pose.position.y
         dyaw = get_yaw_from_pose(self.odom_pose.pose) - get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
         # delta_yaw is in deg
-        d = math.sqrt(dx**2 + dy**2) # distance robot travelled
+        # d = math.sqrt(dx**2 + dy**2) # distance robot travelled
 
         for particle in self.particle_cloud:
             part_theta = get_yaw_from_pose(particle.pose)
-            particle.pose.position.x  += d * math.cos(part_theta)
-            particle.pose.position.y  += d * math.sin(part_theta)
+            # # rospy.loginfo(particle.pose)
+            # # rospy.loginfo(part_theta)
+            # # rospy.loginfo(dyaw)
+            particle.pose.position.x  += dx #noise np.random.normal() * noise
+            particle.pose.position.y  += dy #noise
             new_quat = quaternion_from_euler(0.0, 0.0, part_theta + dyaw)
             particle.pose.orientation.x = new_quat[0]
             particle.pose.orientation.y = new_quat[1]
             particle.pose.orientation.z = new_quat[2]
             particle.pose.orientation.w = new_quat[3]
+
+            
 
 
 
