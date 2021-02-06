@@ -200,7 +200,7 @@ class ParticleFilter:
         
         # TODO
         # # rospy.loginfo(sum(p.w for p in self.particle_cloud))
-        total_w = sum(p.w for p in self.particle_cloud)
+        total_w = sum([p.w for p in self.particle_cloud])
         if total_w != 1:
             for particle in self.particle_cloud:
                 particle.w = particle.w / total_w
@@ -387,11 +387,11 @@ class ParticleFilter:
                 # # rospy.loginfo(closest_obstacle_dist)
                 if math.isnan(closest_obstacle_dist):
                     # # rospy.loginfo("it's nan")   
-                    # prob = 10**(-100)
-                    continue
+                    prob = 10**(-100)
+                    
                         
-                # else:
-                prob = compute_prob_zero_centered_gaussian(closest_obstacle_dist, 0.1)
+                else:
+                    prob = compute_prob_zero_centered_gaussian(closest_obstacle_dist, 0.1)
                 # # rospy.loginfo(prob)
 
                 q = q * prob
@@ -415,7 +415,7 @@ class ParticleFilter:
         dy = self.odom_pose.pose.position.y - self.odom_pose_last_motion_update.pose.position.y
         dyaw = get_yaw_from_pose(self.odom_pose.pose) - get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
         # delta_yaw is in deg
-        # d = math.sqrt(dx**2 + dy**2) # distance robot travelled
+        d = math.sqrt(dx**2 + dy**2) # distance robot travelled
 
         for particle in self.particle_cloud:
             part_theta = get_yaw_from_pose(particle.pose)
@@ -424,7 +424,9 @@ class ParticleFilter:
             # # rospy.loginfo(dyaw)
             particle.pose.position.x  += dx + normal(0.0, 0.1)#noise np.random.normal() * noise
             particle.pose.position.y  += dy + normal(0.0, 0.1)#noise
-            new_quat = quaternion_from_euler(0.0, 0.0, part_theta + dyaw)
+            # particle.pose.position.x += d * math.cos(part_theta)
+            # particle.pose.position.y += d * math.sin(part_theta)
+            new_quat = quaternion_from_euler(0.0, 0.0, part_theta + dyaw + normal(0.0, math.radians(5)))
             particle.pose.orientation.x = new_quat[0]
             particle.pose.orientation.y = new_quat[1]
             particle.pose.orientation.z = new_quat[2]
