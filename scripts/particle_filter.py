@@ -94,7 +94,6 @@ class ParticleFilter:
         # inialize our map and occupancy field
         self.map = OccupancyGrid()
         self.occupancy_field = None
-        # self.unocc = []
 
         self.likelihood_field = LikelihoodField()
 
@@ -145,23 +144,17 @@ class ParticleFilter:
 
         self.map = data
         
-
-        # self.occupancy_field = OccupancyField(data)
-
-        # rosmsg echo OccupancyGrid gices:
-        # width = 384, height = 384
-        # origin position x,y,z = -10.0, -10.0, 0.0; orientation x,y,z,w = 0, 0, 0, 1
-        # resolution = 0.05 in m/cell
-
     
 
     def initialize_particle_cloud(self):
-        # TODO
+        # fill self.particle_cloud list with self.num_particles randomly positioned and oriented
 
         unocc = []
         res = self.map.info.resolution # 0.05 m/cell
         width = self.map.info.width # 384 cells
         height = self.map.info.height # 384 cells
+        x_origin = self.map.info.origin.position.x
+        y_origin = self.map.info.origin.position.y
 
         for i in range(0, len(self.map.data)):
             if self.map.data[i] == 0:
@@ -169,18 +162,18 @@ class ParticleFilter:
 
 
         for part in range(0, self.num_particles):
-            cell = choice(unocc)
+            cell = choice(unocc)    # choose a random valid and unoccupied cell for particle
             cell_x = cell % width
             cell_y = math.floor(cell/height)
-            x = (cell_x + random()) * res - 10.0    # get x coord wrt center origin  
-            y = (cell_y + random()) * res - 10.0    # get y coord wrt center origin
+            x = (cell_x + random()) * res + x_origin    # get x coord wrt center origin  
+            y = (cell_y + random()) * res + y_origin    # get y coord wrt center origin
             
             p = Pose()
             p.position.x = x
             p.position.y = y
 
             theta = math.radians(random() * 360)    # euler orientation angle in radians 
-            quat = quaternion_from_euler(0.0, 0.0, theta) # quaternion orientation
+            quat = quaternion_from_euler(0.0, 0.0, theta) # convert to quaternion orientation
 
             p.orientation.x = quat[0]
             p.orientation.y = quat[1]
@@ -199,9 +192,7 @@ class ParticleFilter:
 
     def normalize_particles(self):
         # make all the particle weights sum to 1.0
-        
-        # TODO
-        # # rospy.loginfo(sum(p.w for p in self.particle_cloud))
+
         total_w = sum([p.w for p in self.particle_cloud])
         if total_w != 1:
             for particle in self.particle_cloud:
@@ -215,7 +206,6 @@ class ParticleFilter:
         particle_cloud_pose_array.poses
 
         for part in self.particle_cloud:
-            # # rospy.loginfo(part.pose)
             particle_cloud_pose_array.poses.append(part.pose)
 
         self.particles_pub.publish(particle_cloud_pose_array)
@@ -233,16 +223,14 @@ class ParticleFilter:
 
 
     def resample_particles(self):
+        # using weights of particles as probability, draw a random sample of particles 
+        # to represent updated cloud
 
-        # TODO
-        
-
+        # make list of all particle weights/probabilities
         probabilities = []
         for particle in self.particle_cloud:
             probabilities.append(particle.w)
-        # rospy.loginfo(max(probabilities))
-        # # rospy.loginfo(len(self.particle_cloud))
-        # # rospy.loginfo(probabilities)
+
 
         new_sample = draw_random_sample(self.particle_cloud, probabilities, self.num_particles)
         self.particle_cloud = new_sample
@@ -351,57 +339,32 @@ class ParticleFilter:
 
     
     def update_particle_weights_with_measurement_model(self, data):
+        # based on new positions (from robot movement) calculate weight 
+        # of each particle using likelihood field model
 
-        # TODO
-        # ((x_lower, x_upper), (y_lower, y_upper)) = self.likelihood_field.get_obstacle_bounding_box()
-        # rospy.loginfo(((x_lower, x_upper), (y_lower, y_upper)))
         for particle in self.particle_cloud:
-        #     # # rospy.loginfo(particle.pose)
-            # x = particle.pose.position.x
-            # y = particle.pose.position.y
-        #     noise = normal(0.0, 0.1)
-        #     # rospy.loginfo((x,y))
-        #     if (x < x_lower) | (x > x_upper) | (y < y_lower) | (y > y_upper):
-        #         particle.w = 10**(-100)
-        #         # rospy.loginfo("does this happen")
-        #         continue
-
-            # rospy.loginfo("how about this")
             q = 1
             for a in range(0,360, 45):
                 z_kt = data.ranges[a]
                 if z_kt > 3.5:
                     continue
-                    # # rospy.loginfo((a, z_kt))
 
-                # # rospy.loginfo(z_kt)
-                theta = get_yaw_from_pose(particle.pose)    # orientation of robot in rad
-                # # rospy.loginfo(theta)
-                
-                # # rospy.loginfo(theta)
+                theta = get_yaw_from_pose(particle.pose)    # in rad
 
+                # translate and rotate 
                 x_z_kt = particle.pose.position.x + z_kt * math.cos(theta + math.radians(a))
                 y_z_kt = particle.pose.position.y + z_kt * math.sin(theta + math.radians(a)) 
-                # # rospy.loginfo(x_z_kt)
-                # # rospy.loginfo(y_z_kt)
 
                 closest_obstacle_dist = self.likelihood_field.get_closest_obstacle_distance(x_z_kt, y_z_kt)
-                # # rospy.loginfo(closest_obstacle_dist)
                 if math.isnan(closest_obstacle_dist):
-                    # # rospy.loginfo("it's nan")   
-                    prob = 10**(-50)
-                    
+                    prob = 10**(-50)    # point (x_z_kt, y_z_kt) not w/in bounds of map
                         
                 else:
                     prob = compute_prob_zero_centered_gaussian(closest_obstacle_dist, 0.1)
-                # # rospy.loginfo(prob)
 
                 q = q * prob
-                # # rospy.loginfo(q)
-            # # rospy.loginfo(q)
             
-            particle.w = q + 10**(-50)
-            # # rospy.loginfo(particle.w)
+            particle.w = q + 10**(-50) # add small number to prevent divide by zero when normalizing
 
 
 
@@ -417,15 +380,13 @@ class ParticleFilter:
         dy = self.odom_pose.pose.position.y - self.odom_pose_last_motion_update.pose.position.y
         dyaw = get_yaw_from_pose(self.odom_pose.pose) - get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
         # delta_yaw is in deg
-        d = math.sqrt(dx**2 + dy**2) # distance robot travelled
+        # d = math.sqrt(dx**2 + dy**2) # distance robot travelled
 
         for particle in self.particle_cloud:
             part_theta = get_yaw_from_pose(particle.pose)
-            # # rospy.loginfo(particle.pose)
-            # # rospy.loginfo(part_theta)
-            # # rospy.loginfo(dyaw)
-            particle.pose.position.x  += dx + normal(0.0, 0.1)#noise np.random.normal() * noise
-            particle.pose.position.y  += dy + normal(0.0, 0.1)#noise
+
+            particle.pose.position.x  += dx + normal(0.0, 0.1)  
+            particle.pose.position.y  += dy + normal(0.0, 0.1) 
             # particle.pose.position.x += d * math.cos(part_theta)
             # particle.pose.position.y += d * math.sin(part_theta)
             new_quat = quaternion_from_euler(0.0, 0.0, part_theta + dyaw + normal(0.0, math.radians(5)))

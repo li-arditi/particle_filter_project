@@ -2,7 +2,7 @@
 
 __Team Members: Li Arditi and Victoria Villalba__
 
-### Implementation Plan
+## Implementation Plan (initial)
 
 * initialize particle cloud (`initialize_particle_cloud()`)
   * plan: create Particle() instance and assign pose values with a random number generator. We will be setting values for the Pose msg parameters Pose.position.x (range being the width of the map), Pose.position.y (range being height of map), Pose.orientation.z (range 0-360 in radians). Put these Particle() instances in an array
@@ -32,7 +32,7 @@ __Team Members: Li Arditi and Victoria Villalba__
   * Once the robot moves and we get the scan measurements, we can take multiple sensor measurements for the same position and average the measurements
 
 
-### Timeline
+## Timeline
 
 * Mon. Feb 1: have most of if not all of initializing cloud and normalize weights done
 
@@ -44,18 +44,60 @@ __Team Members: Li Arditi and Victoria Villalba__
 
 * work on write-up throughout/once a function is complete
 
-### Writeup
+## Writeup
 
-The objective of this project is to implement the particle filter algorithm in order to localize the robot on a map. We create a large number of particles and compare the relative surroundings of the particles to the robot sensor data and then weight the particles to get a higher amount of more accurate particles when resampling. Repeating this process will gather all the particles at or near the
- robot and help us determine the location.
+### Objective
 
-description:
+The objective of this project is to implement the particle filter algorithm in order to localize the robot on a map. We create a large number of particles and compare the relative surroundings of the particles to the robot sensor data and then weight the particles to get a higher amount of more accurate particles when resampling. Repeating this process will gather all the particles at or near the robot and help us determine the location.
 
-location/description of 3 main steps:
+### Description
 
-challenges:
+### The Code 
 
-future work:
+#### Movement
 
-takeaways:
+__Code Location__
+
+__Code Description__
+
+(Li notes: movement basically involves two parts: determining the robot's actual movemnt based on the robot's odometry and updating the position of each of the particles based on the movement of the robot)
+
+#### Computation of Importance Weights
+
+__Code Location__
+
+__Code Description__
+
+#### Resampling
+
+__Code Location__
+
+__Code Description__
+
+### Challenges
+
+[Li will write this up]
+(Li notes: i found myself screaming "where the fuck are my particles!?" a lot)
+
+### Future Work
+
+[Li will write this up, Victoria you can add anything if you have some ideas]
+(Li notes: figure out how to deal with places that "look" the same; being able to completely change the particle cloud if the current robot scan really doesn;t match the estimated robot position "view"; maybe make it so the robot can explore the environment by itself?)
+
+### Takeaways
+
+* expect to be doing a lot of trial and error
+  * 
+
+* 
+  * 
+
+* 
+  * 
+
+### GIF of particle filter
+
+![gif of working particle filter]([particle_filter].gif)
+
+
 
