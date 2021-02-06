@@ -100,7 +100,7 @@ class ParticleFilter:
 
 
         # the number of particles used in the particle filter
-        self.num_particles = 2000
+        self.num_particles = 10000
 
         # initialize the particle cloud array
         self.particle_cloud = []
@@ -194,6 +194,8 @@ class ParticleFilter:
 
         self.publish_particle_cloud()
 
+        
+
 
     def normalize_particles(self):
         # make all the particle weights sum to 1.0
@@ -217,7 +219,7 @@ class ParticleFilter:
             particle_cloud_pose_array.poses.append(part.pose)
 
         self.particles_pub.publish(particle_cloud_pose_array)
-
+        
 
 
 
@@ -366,10 +368,10 @@ class ParticleFilter:
 
             # rospy.loginfo("how about this")
             q = 1
-            for a in range(0,360, 10):
+            for a in range(0,360, 45):
                 z_kt = data.ranges[a]
                 if z_kt > 3.5:
-                    z_kt = 3.5
+                    continue
                     # # rospy.loginfo((a, z_kt))
 
                 # # rospy.loginfo(z_kt)
@@ -387,7 +389,7 @@ class ParticleFilter:
                 # # rospy.loginfo(closest_obstacle_dist)
                 if math.isnan(closest_obstacle_dist):
                     # # rospy.loginfo("it's nan")   
-                    prob = 10**(-100)
+                    prob = 10**(-50)
                     
                         
                 else:
