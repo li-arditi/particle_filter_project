@@ -52,27 +52,38 @@ The objective of this project is to implement the particle filter algorithm in o
 
 ### Description
 
+In order to do this, we made a particle cloud initialized with random coordinates and orientations, then when the robot moves far away enough from its original location, the particles are all updated to follow the same movement and orientation change that the robot
+went through. Based on the robot's scan data and the particle's distance from objects/landmarks, each particle gets a weight based on
+ how similar the data is from the robot's data, which allows for a higher proportion of more accurate particles during resampling. Wi
+th these weights, a new set of particle clouds are chosen to represent the location of the robot. Based on the locations of these new
+ particles, the averages are taken to estimate the robot's actual location. This repeats and the particle locations become more accur
+ate.
+
 ### The Code 
 
 __Movement__
 
-  * _Code Location:_ Using the movement of the robot to update the position and orientation of each particle is done in the function `update_particles_with_motion_model(self)`
+  * _Code Location:_ Using the movement of the robot to update the position and orientation of each particle is done in the function `update_particles_with_motion_model(self)` ()
+  Movement is implemented in lines 373-396, under the function update_particles_with_motion_model.
 
-  * _Code Description:_
+
+  * _Code Description:_ This function moves all the particles the same way the robot moved by taking the last measurement of the robot and subtracting it from the current measurement of the robot's position and orientation. Then those changes that were calculated are applied to every particle in the particle cloud by adding the changes to the old positions and orientations.
 
     (Li notes: movement basically involves two parts: determining the robot's actual movemnt based on the robot's odometry and updating the position of each of the particles based on the movement of the robot)
 
 __Computation of Importance Weights__
 
-  * _Code Location:_
+  * _Code Location:_ The function implementing the likelihood field algorithm is on line 341, and the function that normalizes the weights is on line 193. A helper function is used for the likelihood field algorithm, which is found on line 56.
 
-  * _Code Description:_
+  * _Code Description:_ First, we implemented the likelihood field algorithm in update_particle_weights_with_measurement_model to calculate how similar the surroundings of the particle are to the surroundings of the robot. Then, a new weight is assigned to each particle based on how small the difference is. Any particle that goes outside the map gets a weight very close to zero. In the normalize_particles function, the weights of all the particles are added up and then each weight for each particle is divided by that sum.
 
-__Resampling__
 
-  * _Code Location:_
 
-  * _Code Description:_
+#### Resampling
+
+  * _Code Location:_ The function, resample_particles, is on line 225. This function calls on a helper function on line 39.
+
+  * _Code Description:_ resample_particles makes a list of all the weights to use them as probabilities. The function draw_random_sample is called to porportionately create a new particle cloud according to the weights. The new particle cloud then replaces the old particle cloud.
 
 ### Challenges
 
