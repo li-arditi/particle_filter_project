@@ -1,6 +1,6 @@
 # particle_filter_project
 
-__Team Members: Li Arditi and Victoria Villalba__
+__Team Members: Li Arditi (and Victoria Villalba)__
 
 ## Implementation Plan (initial)
 
@@ -54,25 +54,25 @@ The objective of this project is to implement the particle filter algorithm in o
 
 ### The Code 
 
-#### Movement
+__Movement__
 
-__Code Location__
+  * _Code Location:_ Using the movement of the robot to update the position and orientation of each particle is done in the function `update_particles_with_motion_model(self)`
 
-__Code Description__
+  * _Code Description:_
 
-(Li notes: movement basically involves two parts: determining the robot's actual movemnt based on the robot's odometry and updating the position of each of the particles based on the movement of the robot)
+    (Li notes: movement basically involves two parts: determining the robot's actual movemnt based on the robot's odometry and updating the position of each of the particles based on the movement of the robot)
 
-#### Computation of Importance Weights
+__Computation of Importance Weights__
 
-__Code Location__
+  * _Code Location:_
 
-__Code Description__
+  * _Code Description:_
 
-#### Resampling
+__Resampling__
 
-__Code Location__
+  * _Code Location:_
 
-__Code Description__
+  * _Code Description:_
 
 ### Challenges
 
@@ -87,17 +87,34 @@ __Code Description__
 ### Takeaways
 
 * expect to be doing a lot of trial and error
+  * There were many times I didn't know why the code wasn't working Debugging involved changing one thing and printing results to see how/if anything changed. Also you needed to use trial and error to adjust numbers such as `num_particles`, the probability to add/set for exceptions in the likelihood field model implementation, and the step for which sensor angle measurements to use (in `update_particle_weights_with_measurement_model(self, data)`)
+
+* taking into account noise can be the factor that makes the implementation work
+  * When I (Li) was first writing the code I wasn't including noise, just to make things simpler. When I got to a working implementation of the particle filter it was still a bit off. Then I took into account noise (even though I didn't think that was the problem) and it ended up being what my implementation needed in order to work better
+
+* [something bout it being a partner project]
   * 
 
-* 
-  * 
+### Final Product
 
-* 
-  * 
+## Image of initialized particle cloud
 
-### GIF of particle filter
+![image of initialized particle cloud]([initialized_cloud].jpeg)
 
-![gif of working particle filter]([particle_filter].gif)
+</br>
 
+## GIFs of particle filter
+
+![gif of working particle filter 1]([particle_filter_1].gif)
+
+</br>
+
+![gif of working particle filter 2]([particle_filter_2].gif)
+
+</br>
+
+![gif of working particle filter 3]([particle_filter_3].gif)
+
+</br>
 
 

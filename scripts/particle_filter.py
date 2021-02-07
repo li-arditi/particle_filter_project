@@ -95,6 +95,7 @@ class ParticleFilter:
         self.map = OccupancyGrid()
         self.occupancy_field = None
 
+        # initialize likelihood field
         self.likelihood_field = LikelihoodField()
 
 
@@ -147,26 +148,31 @@ class ParticleFilter:
     
 
     def initialize_particle_cloud(self):
-        # fill self.particle_cloud list with self.num_particles randomly positioned and oriented
+        """
+        Function to fill self.particle_cloud list with self.num_particles particles.
+        Particles are randomly (evenly) positioned and oriented throughout the map/house/room
+        """
 
+        # get list of all the valid, unoccupied cells of map/OccupancyGrid
         unocc = []
         res = self.map.info.resolution # 0.05 m/cell
         width = self.map.info.width # 384 cells
         height = self.map.info.height # 384 cells
-        x_origin = self.map.info.origin.position.x
-        y_origin = self.map.info.origin.position.y
+        x_origin = self.map.info.origin.position.x # -10.0 (m)
+        y_origin = self.map.info.origin.position.y # -10.0 (m)
 
         for i in range(0, len(self.map.data)):
             if self.map.data[i] == 0:
                 unocc.append(i)
 
-
+        # for each particle, we randomly decide its initial position (cells found above
+        # are the possibilities) and orientation
         for part in range(0, self.num_particles):
-            cell = choice(unocc)    # choose a random valid and unoccupied cell for particle
-            cell_x = cell % width
-            cell_y = math.floor(cell/height)
-            x = (cell_x + random()) * res + x_origin    # get x coord wrt center origin  
-            y = (cell_y + random()) * res + y_origin    # get y coord wrt center origin
+            cell = choice(unocc)
+            cell_x = cell % width   # get column of cell
+            cell_y = math.floor(cell/height)    # get row of cell
+            x = (cell_x + random()) * res + x_origin    # get x coord for particle wrt center origin  
+            y = (cell_y + random()) * res + y_origin    # get y coord for particle wrt center origin
             
             p = Pose()
             p.position.x = x
@@ -223,8 +229,11 @@ class ParticleFilter:
 
 
     def resample_particles(self):
-        # using weights of particles as probability, draw a random sample of particles 
-        # to represent updated cloud
+        """
+        Function to update the particle cloud based on the particle importance weights. 
+        Do this by drawing a random sample of particles with replacement where weight
+        is the probability the particle is drawn.
+        """
 
         # make list of all particle weights/probabilities
         probabilities = []
@@ -313,7 +322,7 @@ class ParticleFilter:
     def update_estimated_robot_pose(self):
         # based on the particles within the particle cloud, update the robot pose estimate
         
-        # TODO
+        # use average to estimate robot position and orientation
         xAvg = 0
         yAvg = 0
         orientX = 0
@@ -339,56 +348,62 @@ class ParticleFilter:
 
     
     def update_particle_weights_with_measurement_model(self, data):
-        # based on new positions (from robot movement) calculate weight 
-        # of each particle using likelihood field model
+        """Based on new particle positions (mirroring robot movement) calculate importance weight 
+        of each particle using likelihood field for range finders model
+        """
 
         for particle in self.particle_cloud:
             q = 1
             for a in range(0,360, 45):
+                # only use some LaserScan measurements (intervals of 45 deg)
                 z_kt = data.ranges[a]
                 if z_kt > 3.5:
+                    # if there isn't anything within range, ignore sensor measurement
                     continue
 
                 theta = get_yaw_from_pose(particle.pose)    # in rad
 
-                # translate and rotate 
+                # translate and rotate robot sensor meas. to match particle Pose
                 x_z_kt = particle.pose.position.x + z_kt * math.cos(theta + math.radians(a))
                 y_z_kt = particle.pose.position.y + z_kt * math.sin(theta + math.radians(a)) 
 
                 closest_obstacle_dist = self.likelihood_field.get_closest_obstacle_distance(x_z_kt, y_z_kt)
                 if math.isnan(closest_obstacle_dist):
-                    prob = 10**(-50)    # point (x_z_kt, y_z_kt) not w/in bounds of map
+                    # point (x_z_kt, y_z_kt) not w/in bounds of map
+                    prob = 10**(-50)
                         
                 else:
                     prob = compute_prob_zero_centered_gaussian(closest_obstacle_dist, 0.1)
 
                 q = q * prob
             
-            particle.w = q + 10**(-50) # add small number to prevent divide by zero when normalizing
+            particle.w = q + 10**(-50) 
+            # added small number to prevent divide by zero when normalizing
 
 
 
         
 
     def update_particles_with_motion_model(self):
-
         # based on the how the robot has moved (calculated from its odometry), we'll  move
         # all of the particles correspondingly
 
-        # TODO
+        # calculate change in x position, y position, and orientation of robot 
         dx = self.odom_pose.pose.position.x - self.odom_pose_last_motion_update.pose.position.x
         dy = self.odom_pose.pose.position.y - self.odom_pose_last_motion_update.pose.position.y
         dyaw = get_yaw_from_pose(self.odom_pose.pose) - get_yaw_from_pose(self.odom_pose_last_motion_update.pose)
         # delta_yaw is in deg
-        # d = math.sqrt(dx**2 + dy**2) # distance robot travelled
 
+        d = math.sqrt(dx**2 + dy**2) # distance robot travelled
+
+        # move (i.e. update) each particle Ppse accordingly
         for particle in self.particle_cloud:
             part_theta = get_yaw_from_pose(particle.pose)
 
-            particle.pose.position.x  += dx + normal(0.0, 0.1)  
-            particle.pose.position.y  += dy + normal(0.0, 0.1) 
-            # particle.pose.position.x += d * math.cos(part_theta)
-            # particle.pose.position.y += d * math.sin(part_theta)
+            # particle.pose.position.x  += dx + normal(0.0, 0.1)  
+            # particle.pose.position.y  += dy + normal(0.0, 0.1) 
+            particle.pose.position.x += d * math.cos(part_theta) + normal(0.0, 0.1)
+            particle.pose.position.y += d * math.sin(part_theta) + normal(0.0, 0.1)
             new_quat = quaternion_from_euler(0.0, 0.0, part_theta + dyaw + normal(0.0, math.radians(5)))
             particle.pose.orientation.x = new_quat[0]
             particle.pose.orientation.y = new_quat[1]
