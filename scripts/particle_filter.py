@@ -400,8 +400,6 @@ class ParticleFilter:
         for particle in self.particle_cloud:
             part_theta = get_yaw_from_pose(particle.pose)
 
-            # particle.pose.position.x  += dx + normal(0.0, 0.1)  
-            # particle.pose.position.y  += dy + normal(0.0, 0.1) 
             particle.pose.position.x += d * math.cos(part_theta) + normal(0.0, 0.1)
             particle.pose.position.y += d * math.sin(part_theta) + normal(0.0, 0.1)
             new_quat = quaternion_from_euler(0.0, 0.0, part_theta + dyaw + normal(0.0, math.radians(5)))

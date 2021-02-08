@@ -1,6 +1,6 @@
 # particle_filter_project
 
-__Team Members: Li Arditi (and Victoria Villalba)__
+__Team Members: Li Arditi and Victoria Villalba__
 
 ## Implementation Plan (initial)
 
@@ -48,52 +48,47 @@ __Team Members: Li Arditi (and Victoria Villalba)__
 
 ### Objective
 
-The objective of this project is to implement the particle filter algorithm in order to localize the robot on a map. We create a large number of particles and compare the relative surroundings of the particles to the robot sensor data and then weight the particles to get a higher amount of more accurate particles when resampling. Repeating this process will gather all the particles at or near the robot and help us determine the location.
+The goal of this project is to implement the particle filter algorithm to localize the position and orientation of a robot in an environment (in this case, a room/house). In this implementation of Monte Carlo localization it is assumed that the robot has a map of its environment. 
+
+ We create a large number of particles and compare the relative surroundings of the particles to the robot sensor data and then weight the particles to get a higher amount of more accurate particles when resampling. Repeating this process will gather all the particles at or near the robot and help us determine the location.
 
 ### Description
 
-In order to do this, we made a particle cloud initialized with random coordinates and orientations, then when the robot moves far away enough from its original location, the particles are all updated to follow the same movement and orientation change that the robot
-went through. Based on the robot's scan data and the particle's distance from objects/landmarks, each particle gets a weight based on
- how similar the data is from the robot's data, which allows for a higher proportion of more accurate particles during resampling. Wi
-th these weights, a new set of particle clouds are chosen to represent the location of the robot. Based on the locations of these new
- particles, the averages are taken to estimate the robot's actual location. This repeats and the particle locations become more accur
-ate.
+The implementation of this particle filter starts with creating many random guesses (particles) for the possible position and orientation (`Pose()`) of the robot. When the robot moves each particle's Pose is updated to reflect the change in position and orientation of the robot. Then based on the robot's laser scan data and the hypothetical laser scan data that would be recorded from the particle's position and orientation, an importance weight is calculated for each particle based on how similar the said data are. A simplified likelihood field for range finders model is used to calculate the particle weights. A larger weight indicates the particle is a more accurate estimate of the robot's actual position and orientation and therefore will have a higher probability of being selected during resampling. Resampling involves updating the particle cloud by creating a random sample of particles based on the normalized weights of the particles. Then position and orientation values for all the particles in the updated particle cloud are averaged to estimate the robot's actual location and orientation. Updating each particle's Pose based on robot movement, calculating importance weights, normalizing particle weights, and resampling is repeated until all the particles are localized around (hopefully) the robot's actual location.
 
 ### The Code 
 
 __Movement__
 
-  * _Code Location:_ Using the movement of the robot to update the position and orientation of each particle is done in the function `update_particles_with_motion_model(self)` ()
-  Movement is implemented in lines 373-396, under the function update_particles_with_motion_model.
+  * _Code Location:_ Using the movement of the robot to update the position and orientation of each particle is done in the function `update_particles_with_motion_model(self)` (lines 387-409)
 
+  * _Code Description:_ This function moves all the particles the same way the robot moved by taking the last odom measurement of the robot and subtracting it from the current odom measurement of the robot's position and orientation. Then those changes are applied to every particle in the particle cloud by adding the changes to the old positions and orientations. [side note: the change in x and change in y for the particle were calculated such that it reflected the robot's overall motion (not just the robot's change in x and change in y). See diagram below.]
 
-  * _Code Description:_ This function moves all the particles the same way the robot moved by taking the last measurement of the robot and subtracting it from the current measurement of the robot's position and orientation. Then those changes that were calculated are applied to every particle in the particle cloud by adding the changes to the old positions and orientations.
-
-    (Li notes: movement basically involves two parts: determining the robot's actual movemnt based on the robot's odometry and updating the position of each of the particles based on the movement of the robot)
+  <p align="center">
+  <img src="IMG_0321.jpeg" width = 500>
+  </p>
 
 __Computation of Importance Weights__
 
-  * _Code Location:_ The function implementing the likelihood field algorithm is on line 341, and the function that normalizes the weights is on line 193. A helper function is used for the likelihood field algorithm, which is found on line 56.
+  * _Code Location:_ The function `update_particle_weights_with_measurement_model(self, data)`  implements the likelihood field algorithm to calculate importance weights (lines 350-381). That function calls `get_closest_obstacle_distance(self, x, y)` from `likelihood_field.py` and a helper function`compute_prob_zero_centered_gaussian(dist, sd)` (line 56). After the function to update particle weights is called, `normalize_particles(self)` (lines 199-205) is called to normalize the weights. 
 
-  * _Code Description:_ First, we implemented the likelihood field algorithm in update_particle_weights_with_measurement_model to calculate how similar the surroundings of the particle are to the surroundings of the robot. Then, a new weight is assigned to each particle based on how small the difference is. Any particle that goes outside the map gets a weight very close to zero. In the normalize_particles function, the weights of all the particles are added up and then each weight for each particle is divided by that sum.
+  * _Code Description:_ Once each particle's Pose is updated based on the robot's movement each particle's importance weight is calculated using the likelihood field for range finders algorithm. This involves taking the robot's current sensor measurements, and for each particle translate and rotate the scan to align with the particle's position and orientation. Then for each measurement end point the minimum distance to the nearest obstacle is calculated and multiplied to the total weight for the particle. Since  it would be computationally intensive to do this for all 360 sensor measurements, only some angle measurements were used (from trial and error an interval of 45 degrees was sufficient). Lastly, if for a given angle the sensor did not detect anything within its range, then sensor measurement was ignored. Similarly, if an end point is outside the bounds of the map, then the the probability is set to a very small number.
 
+__Resampling__
 
+  * _Code Location:_ Resampling is handled in the function `resample_particles(self)` (lines 231-245). This function calls on a helper function `draw_random_sample(choices, probabilities, n)`(line 39).
 
-#### Resampling
-
-  * _Code Location:_ The function, resample_particles, is on line 225. This function calls on a helper function on line 39.
-
-  * _Code Description:_ resample_particles makes a list of all the weights to use them as probabilities. The function draw_random_sample is called to porportionately create a new particle cloud according to the weights. The new particle cloud then replaces the old particle cloud.
+  * _Code Description:_ `resample_particles` makes a list of all the weights to use them as the `probabilities` input for the `draw_random_sample` function. The function `draw_random_sample` is used to create a new particle cloud according to the weights. This new particle cloud replaces the old particle cloud.
 
 ### Challenges
 
-[Li will write this up]
+Initially it was a challenge to initialize the particle field. One reason was because I had never used quaternions to represent orientation. The other reason was because I didn't realize the OccupancyGrid map scale and origin was different from the odometry/Pose scale and origin. After a lot of confusion and trial and error and googling I eventually understood how things worked (at least well enough to initialize the particle cloud). A more general challenge was finding the balance between testing with enough particles for the importance weight calculation to work and testing with few enough particles to be able to look at print statements. This was mainly an issue when trying to get the `update_particle_weights_with_measurement_model` function to work. I started with using only 10 particles since it was easier to keep track of the different particles. However, I eventually realized that it wasn't my code/implementation of the likelihood field algorithm that was incorrect; it was the number of particles in the particle cloud that was throwing things off. That was because the probabilities/weights for each particle ended up being so small since the 10 particles were being evenly distributed across the whole map. Once the number of particles was increased the next issue was where the particles were getting localized. At that time noise wasn't included in order to simplify things, so hoping it would help noise was accounted for when the particle Poses were updated. That surprisingly helped a lot, but there were still some cases when the particle cloud localized very far from the robot's actual location. Pouya suggested testing the particle filter when the robot is placed inside the middle/small room. That worked very well, so the errors in localization outside the small room were most likely because there are locations of the map that "look" very similar. Increasing the number of particles and decreasing the number of sensor measurements used for the likelihood field model (i.e. increasing the angle interval/step from 10 to 45) increased the accuracy of localization. 
+
 (Li notes: i found myself screaming "where the fuck are my particles!?" a lot)
 
 ### Future Work
 
-[Li will write this up, Victoria you can add anything if you have some ideas]
-(Li notes: figure out how to deal with places that "look" the same; being able to completely change the particle cloud if the current robot scan really doesn;t match the estimated robot position "view"; maybe make it so the robot can explore the environment by itself?)
+This particle filter seems to work pretty well. However, as mentioned above in the **Challenges** section sometimes the particle filter incorrectly localized the particles if the location "looked" similar to other locations throughout the map. Although incorrect locations should theoretically get eliminated as the robot moves around more and gets more information, sometimes the particles were localized before new, differentiating data could be processed. Therefore, future work could include figuring out how to better deal with locations that "look" the same. One could potentially enhance the code by having a way to "override" the particle localization if new data doesn't match what is expected in the current localization. The linear and angular movement threshold and wait times could also probably be tweaked to decrease the likelihood of incorrect localizations. In addition, another solution could be to have the robot explore the environment on its own so it can move in a way that would help differentiate similar locations. 
 
 ### Takeaways
 
@@ -103,10 +98,10 @@ __Computation of Importance Weights__
 * taking into account noise can be the factor that makes the implementation work
   * When I (Li) was first writing the code I wasn't including noise, just to make things simpler. When I got to a working implementation of the particle filter it was still a bit off. Then I took into account noise (even though I didn't think that was the problem) and it ended up being what my implementation needed in order to work better
 
-* [something bout it being a partner project]
+* [something bout it being a partner project/communication]
   * 
 
-### Final Product
+### Visualizations
 
 ## Image of initialized particle cloud
 
