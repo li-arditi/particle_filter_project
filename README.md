@@ -111,15 +111,15 @@ This particle filter seems to work pretty well. However, as mentioned above in t
 
 ## GIFs of particle filter
 
-![gif of working particle filter 1]([particle_filter_1].gif)
+![gif of working particle filter 1]([gif1].gif)
 
 </br>
 
-![gif of working particle filter 2]([particle_filter_2].gif)
+![gif of working particle filter 2]([gif2].gif)
 
 </br>
 
-![gif of working particle filter 3]([particle_filter_3].gif)
+![gif of working particle filter 3]([gif3].gif)
 
 </br>
 
