@@ -65,7 +65,7 @@ __Movement__
   * _Code Description:_ This function moves all the particles the same way the robot moved by taking the last odom measurement of the robot and subtracting it from the current odom measurement of the robot's position and orientation. Then those changes are applied to every particle in the particle cloud by adding the changes to the old positions and orientations. [side note: the change in x and change in y for the particle were calculated such that it reflected the robot's overall motion (not just the robot's change in x and change in y). See diagram below.]
 
   <p align="center">
-  <img src="IMG_0321.jpeg" width = 500>
+  <img src="IMG_0322.jpeg" width = 500>
   </p>
 
 __Computation of Importance Weights__
