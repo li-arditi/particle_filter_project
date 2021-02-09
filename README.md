@@ -105,7 +105,13 @@ This particle filter seems to work pretty well. However, as mentioned above in t
 
 ## Image of initialized particle cloud (10,000 particles)
 
-![image of initialized particle cloud]([initialized_cloud].JPG)
+![image of initialized particle cloud](initialized_cloud.JPG)
+
+</br>
+
+__Close-up of the initialized particle cloud__
+
+<img src="closeup_initialized_cloud.JPG" width = 400>
 
 </br>
 
