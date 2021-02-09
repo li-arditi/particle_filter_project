@@ -103,9 +103,9 @@ This particle filter seems to work pretty well. However, as mentioned above in t
 
 ### Visualizations
 
-## Image of initialized particle cloud
+## Image of initialized particle cloud (10,000 particles)
 
-![image of initialized particle cloud]([initialized_cloud].jpeg)
+![image of initialized particle cloud]([initialized_cloud].JPG)
 
 </br>
 
