@@ -98,8 +98,8 @@ This particle filter seems to work pretty well. However, as mentioned above in t
 * taking into account noise can be the factor that makes the implementation work
   * When I (Li) was first writing the code I wasn't including noise, just to make things simpler. When I got to a working implementation of the particle filter it was still a bit off. Then I took into account noise (even though I didn't think that was the problem) and it ended up being what my implementation needed in order to work better
 
-* [something bout it being a partner project/communication]
-  * 
+* coordinating work when in a group
+  * It was hard to distribute work between two people when we both have completely different work habits and schedules. A note for next time is to split up work to make sure everyonegets an even workload.
 
 ### Visualizations
 
